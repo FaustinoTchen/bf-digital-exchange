@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registo - BF Digital Exchange</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f8fafc; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 500px; }
+        h2 { color: #1e293b; margin-bottom: 20px; text-align: center; }
+        .group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+        button { width: 100%; background: #2563eb; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 15px; margin-top: 10px; }
+        button:hover { background: #1d4ed8; }
+        .error { color: #dc2626; background: #fee2e2; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 15px; font-size: 13px; }
+        .back-link { display: block; text-align: center; margin-top: 15px; color: #64748b; font-size: 13px; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>📝 Criar Nova Conta</h2>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        <form method="POST" enctype="multipart/form-data">
+            <div class="group"><label>Nome Completo</label><input type="text" name="fullname" required></div>
+            <div class="group"><label>Email</label><input type="email" name="email" required></div>
+            <div class="group"><label>Telemóvel (com indicativo)</label><input type="text" name="phone" placeholder="+351... / +244..." required></div>
+            <div class="group"><label>Palavra-passe para login na Sala</label><input type="password" name="password" required></div>
+            <div class="group"><label>IBAN Euro (Opcional)</label><input type="text" name="iban_euro"></div>
+            <div class="group"><label>IBAN KZ (Opcional)</label><input type="text" name="iban_kz"></div>
+            <div class="group"><label>Documento de Identidade (ID)</label><input type="file" name="id_document" required></div>
+            <div class="group"><label>Foto Tipo Passe / Meio Corpo</label><input type="file" name="half_body_photo" required></div>
+            <button type="submit">Submeter Registo</button>
+        </form>
+        <a href="/" class="back-link">← Voltar ao Início</a>
+    </div>
+</body>
+</html>

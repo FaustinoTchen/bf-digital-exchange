@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Executivo 360º - BF Digital Exchange</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400,500,600,700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        :root {
+            --bg-app: #090d16;
+            --surface: #111827;
+            --surface-card: #1f2937;
+            --border: #374151;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-app); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+        header { background-color: var(--surface); border-bottom: 1px solid var(--border); padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        .logo-area h1 { font-size: 20px; font-weight: 700; color: #60a5fa; letter-spacing: 0.5px; }
+        .user-meta { display: flex; align-items: center; gap: 20px; }
+        .user-badge { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; color: #93c5fd; }
+        .logout-btn { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; transition: 0.2s; }
+        .logout-btn:hover { background: var(--danger); color: #fff; }
+
+        .main-container { max-width: 1600px; width: 100%; margin: 40px auto; padding: 0 30px; flex: 1; }
+        
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px; margin-bottom: 35px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .card-header h2 { font-size: 18px; font-weight: 600; color: var(--text-main); margin-bottom: 25px; }
+
+        .search-input { width: 100%; padding: 14px 20px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--surface-card); color: var(--text-main); outline: none; margin-bottom: 25px; }
+        .search-input:focus { border-color: var(--primary); }
+
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; min-width: 1100px; }
+        th { background-color: var(--surface-card); color: var(--text-muted); font-weight: 600; padding: 16px; border-bottom: 2px solid var(--border); text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+        td { padding: 18px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover { background: rgba(255,255,255,0.01); }
+
+        select { padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; border: 1px solid var(--border); background: var(--surface-card); color: var(--text-main); cursor: pointer; outline: none; }
+        
+        .doc-link { color: #60a5fa; text-decoration: none; font-weight: 600; font-size: 13px; transition: 0.2s; }
+        .doc-link:hover { text-decoration: underline; color: #93c5fd; }
+
+        .btn-action { padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; border: none; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-chat { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .btn-chat:hover { background: var(--primary); color: #fff; }
+        .btn-delete { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-delete:hover { background: var(--danger); color: #fff; }
+
+        .admin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) 140px; gap: 15px; margin-top: 20px; align-items: center; }
+        .admin-form input, .admin-form select { padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-card); color: var(--text-main); font-size: 14px; }
+        .admin-form button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        .flash-success { background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 14px 20px; border-radius: 10px; margin-bottom: 25px; font-size: 14px; font-weight: 500; }
+
+        #chat-modal { display: none; position: fixed; bottom: 30px; right: 30px; width: 380px; background: var(--surface); border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid var(--border); z-index: 1000; overflow: hidden; }
+        .chat-header { background: #111827; color: var(--text-main); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border); }
+        .chat-close { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
+        .chat-body { height: 260px; overflow-y: scroll; padding: 16px; background: #0b0f19; font-size: 13px; display: flex; flex-direction: column; gap: 10px; }
+        .chat-footer { padding: 12px 16px; display: flex; gap: 10px; background: var(--surface); border-top: 1px solid var(--border); }
+        .chat-footer input { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-card); color: var(--text-main); font-size: 13px; outline: none; }
+        .chat-footer button { background: var(--primary); color: #fff; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .msg-bubble { padding: 10px 14px; border-radius: 10px; max-width: 80%; line-height: 1.4; word-break: break-word; }
+        .msg-incoming { background: #1f2937; color: #f9fafb; align-self: flex-start; }
+        .msg-outgoing { background: #2563eb; color: #ffffff; align-self: flex-end; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area"><h1>BF DIGITAL EXCHANGE | PORTAL EXECUTIVO 360º</h1></div>
+        <div class="user-meta">
+            <span class="user-badge">🛡️ {{ username }} ({{ role }})</span>
+            <a href="/logout" class="logout-btn">Terminar Sessão</a>
+        </div>
+    </header>
+
+    <main class="main-container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% set latest = messages[-1] %}
+                {% if not latest.startswith('APROVAR:') %}
+                    <div class="flash-success">{{ latest }}</div>
+                {% endif %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-header"><h2>📋 Gestão de Ativos & Comprovativos</h2></div>
+            <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Pesquisar por nome ou e-mail...">
+
+            <div class="table-responsive">
+                <table id="clientTable">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Estado Operacional</th>
+                            <th>Comprovativo do Cliente (PDF)</th>
+                            <th>Emitir Comprovativo BF (PDF)</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in registos %}
+                        <tr>
+                            <td>
+                                <strong style="color: #fff;">{{ c['fullname'] }}</strong><br>
+                                <span style="color: var(--text-muted); font-size: 12px;">{{ c['email'] }}</span>
+                            </td>
+                            <td>
+                                <form action="{{ url_for('update_status', id=c['id']) }}" method="POST" style="margin: 0;">
+                                    <select name="status" onchange="this.form.submit()">
+                                        <option value="Pendente" {% if c['status']=='Pendente' %}selected{% endif %}>⏳ Pendente</option>
+                                        <option value="Aprovado" {% if c['status']=='Aprovado' %}selected{% endif %}>✅ Aprovado</option>
+                                        <option value="Comprovativo Submetido - A Aguardar Validação" {% if 'Comprovativo Submetido' in c['status'] %}selected{% endif %}>📄 PDF Submetido</option>
+                                        <option value="Comprovativo BF Enviado - Verificar Banco" {% if 'Comprovativo BF Enviado' in c['status'] %}selected{% endif %}>🏦 PDF BF Emitido</option>
+                                        <option value="Concluído - Fundos Liquidados" {% if 'Concluído' in c['status'] %}selected{% endif %}>🎉 Concluído (Ambos)</option>
+                                        <option value="Rejeitado" {% if c['status']=='Rejeitado' %}selected{% endif %}>❌ Rejeitado</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td>
+                                {% if c['transfer_receipt'] %}
+                                    <a href="/uploads/{{ c['transfer_receipt'] }}" target="_blank" class="doc-link">📥 Ver PDF do Cliente</a>
+                                {% else %}
+                                    <span style="color: var(--text-muted); font-size: 12px;">A aguardar envio</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if c['admin_receipt'] %}
+                                    <a href="/uploads/{{ c['admin_receipt'] }}" target="_blank" class="doc-link" style="color: #34d399;">✅ PDF BF Emitido</a>
+                                {% endif %}
+                                <form action="/admin/send_receipt/{{ c['id'] }}" method="POST" enctype="multipart/form-data" style="margin-top: 6px; display: flex; gap: 6px;">
+                                    <input type="file" name="admin_receipt" accept=".pdf" style="font-size: 11px; width: 140px; color: #fff;" required>
+                                    <button type="submit" style="background: var(--primary); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">Submeter</button>
+                                </form>
+                            </td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <button type="button" class="btn-action btn-chat" onclick="openChat('{{ c['email'] }}', '{{ c['fullname'] }}')">💬 Chat</button>
+                                <form action="{{ url_for('delete_client', id=c['id']) }}" method="POST" onsubmit="return confirm('Eliminar registo?');" style="display:inline;">
+                                    <button type="submit" class="btn-action btn-delete">🗑️</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">Sem registos.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if role == 'Primário' %}
+        <div class="card">
+            <div class="card-header"><h2>⚙️ Governança de Administradores</h2></div>
+            <table>
+                <thead><tr><th>Utilizador</th><th>Função</th><th style="text-align: right;">Ação</th></tr></thead>
+                <tbody>
+                    {% for a in admins %}
+                    <tr>
+                        <td>{{ a['username'] }}</td>
+                        <td>{{ a['role'] }}</td>
+                        <td style="text-align: right;">
+                            {% if a['username'] != username %}
+                            <form action="{{ url_for('delete_admin', id=a['id']) }}" method="POST" onsubmit="return confirm('Remover admin?');"><button type="submit" class="btn-action btn-delete">Revogar</button></form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <form action="{{ url_for('add_admin') }}" method="POST" class="admin-form" style="margin-top: 20px;">
+                <input type="text" name="username" placeholder="Utilizador" required>
+                <input type="password" name="password" placeholder="Palavra-passe" required>
+                <select name="role"><option value="Secundário">Secundário</option><option value="Primário">Primário</option></select>
+                <button type="submit">Criar</button>
+            </form>
+        </div>
+        {% endif %}
+    </main>
+
+    <div id="chat-modal">
+        <div class="chat-header"><span id="chat-title">Chat</span><button class="chat-close" onclick="closeChat()">✕</button></div>
+        <div id="admin-chat-box" class="chat-body"></div>
+        <div class="chat-footer">
+            <input type="text" id="admin-msg-input" placeholder="Mensagem..." onkeypress="handleKey(event)">
+            <button onclick="sendAdminMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const adminUser = "{{ username }}";
+        socket.emit('join', {room: adminUser});
+        let activeClientEmail = "";
+
+        const allMessages = [
+            {% for m in messages %}
+            {sender: "{{ m.sender }}", receiver: "{{ m.receiver }}", content: "{{ m.content }}"},
+            {% endfor %}
+        ];
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                {% if message.startswith('APROVAR:') %}
+                    const approvalData = "{{ message }}".split(':');
+                    window.addEventListener('DOMContentLoaded', () => openChat(approvalData[1], approvalData[2]));
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
+
+        function openChat(email, name) {
+            activeClientEmail = email;
+            document.getElementById('chat-title').innerText = "Chat: " + name;
+            document.getElementById('chat-modal').style.display = 'block';
+            renderChatHistory();
+        }
+
+        function closeChat() { document.getElementById('chat-modal').style.display = 'none'; activeClientEmail = ""; }
+
+        function renderChatHistory() {
+            let box = document.getElementById('admin-chat-box'); box.innerHTML = "";
+            allMessages.forEach(msg => {
+                if ((msg.sender === activeClientEmail && msg.receiver === adminUser) ||
+                    (msg.sender === adminUser && msg.receiver === activeClientEmail) ||
+                    (msg.sender === activeClientEmail)) {
+                    let isMe = msg.sender === adminUser;
+                    box.innerHTML += `<div style="display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'};">
+                        <div class="msg-bubble ${isMe ? 'msg-outgoing' : 'msg-incoming'}">${msg.content}</div>
+                    </div>`;
+                }
+            });
+            box.scrollTop = box.scrollHeight;
+        }
+
+        socket.on('receive_message', (data) => {
+            allMessages.push(data);
+            if (activeClientEmail && (data.sender === activeClientEmail || data.receiver === activeClientEmail)) renderChatHistory();
+        });
+
+        function sendAdminMessage() {
+            let input = document.getElementById('admin-msg-input'); let content = input.value.trim();
+            if (!content || !activeClientEmail) return;
+            socket.emit('send_message', {sender: adminUser, receiver: activeClientEmail, content: content});
+            allMessages.push({sender: adminUser, receiver: activeClientEmail, content: content});
+            renderChatHistory(); input.value = '';
+        }
+
+        function handleKey(e) { if (e.key === 'Enter') sendAdminMessage(); }
+
+        function filterTable() {
+            let f = document.getElementById('searchInput').value.toLowerCase();
+            let tr = document.getElementById('clientTable').getElementsByTagName('tr');
+            for (let i = 1; i < tr.length; i++) {
+                let td = tr[i].getElementsByTagName('td')[0];
+                tr[i].style.display = td && td.innerText.toLowerCase().includes(f) ? "" : "none";
+            }
+        }
+    </script>
+</body>
+</html>

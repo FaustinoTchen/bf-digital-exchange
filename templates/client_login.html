@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Cliente - BF Digital Exchange</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0f172a; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .card { background: #fff; padding: 35px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        h2 { color: #1e293b; text-align: center; margin-bottom: 25px; }
+        .group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; }
+        input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+        button { width: 100%; background: #2563eb; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 15px; }
+        button:hover { background: #1d4ed8; }
+        .flash { color: #dc2626; background: #fee2e2; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 15px; font-size: 13px; }
+        .back { display: block; text-align: center; margin-top: 15px; color: #64748b; font-size: 13px; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🔐 Aceder à Sala</h2>
+        {% with messages = get_flashed_messages() %}{% if messages %}<div class="flash">{{ messages[0] }}</div>{% endif %}{% endwith %}
+        <form method="POST">
+            <div class="group"><label>Email</label><input type="email" name="email" required></div>
+            <div class="group"><label>Palavra-passe</label><input type="password" name="password" required></div>
+            <button type="submit">Entrar</button>
+        </form>
+        <a href="/" class="back">← Voltar ao Início</a>
+    </div>
+</body>
+</html>
